@@ -73,8 +73,21 @@ public class PoP {
 	private void relevantActions(Literal preCondition, List<Action> allActions, List<Action> providers) {
 		for(Action a : allActions){
 			for(Literal l : a.getPostConditions()){
+				
 				if(l.getName().equals(preCondition.getName()) && l.getValue() == preCondition.getValue()){
-					providers.add(a);
+					
+					boolean equals = true;
+					List<String> lvalues = new ArrayList<String>(l.getArgs().values());
+					List<String> preCValues = new ArrayList<String>(preCondition.getArgs().values());
+					for(int i=0; i<preCValues.size(); i++){
+						int n = preCValues.get(i).compareTo(lvalues.get(i));
+						if(!preCValues.get(i).equals(lvalues.get(i))){
+							equals = false;
+						}
+					}
+					if(equals == true){
+						providers.add(a);
+					}
 				}
 			}
 		}

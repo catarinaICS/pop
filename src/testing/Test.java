@@ -31,6 +31,13 @@ public class Test {
 		onTableArgs.put("?b", null);
 		Literal onTable = new Literal("ontable", onTableArgs, true);
 		*/
+//		List<Literal> start = start();
+//		System.out.println(start);
+//		for(Literal l : start){
+//			System.out.println(l.getArgs().values());
+//		}
+//		
+		
 		
 		Action finish = finishAction();
 		List<AgendaElement> agenda = new ArrayList<AgendaElement>();
@@ -55,7 +62,7 @@ public class Test {
 		
 		Plan finalPlan = p.pop(plan, agenda);
 		
-		System.out.println(finalPlan.getActions());
+//		System.out.println(finalPlan.getActions());
 		for(CausalLink c : finalPlan.getCausalLinks()){
 			System.out.println(c.getFirst().getName() + " -> " + c.getAchieved() + " -> " + c.getSecond().getName() );
 		}
