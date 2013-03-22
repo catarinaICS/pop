@@ -50,5 +50,10 @@ public class Action {
 	public void setArgs(Map<String, String> args) {
 		this.args = args;
 	}
+	
+	@Override
+	public String toString() {
+		return preConditions + " -> " + name +"("+ args.keySet() + ") -> " + postConditions; 
+	}
 
 }

@@ -50,5 +50,15 @@ public class Literal {
 	
 	
 	
+	@Override
+	public String toString() {
+		String litValue = "";
+		if(value == false ){
+			litValue = "not ";
+		}
+		return litValue + name + args.keySet();
+	}
+	
+	
 	
 }

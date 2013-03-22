@@ -4,7 +4,6 @@ import objects.Action;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import objects.AgendaElement;
 import objects.CausalLink;
 import objects.Literal;
@@ -12,8 +11,14 @@ import objects.Ordering;
 import objects.Plan;
 
 public class PoP {
-	Domain domain = new Domain();
 	
+	private Domain domain;
+	
+	public PoP(Domain domain) {
+		super();
+		this.domain = domain;
+	}
+
 	public Plan pop(Plan p, List<AgendaElement> agenda){
 		if(agenda.isEmpty()){
 			return p;
@@ -41,14 +46,14 @@ public class PoP {
 				}
 				
 				//threats
-				for(Action planAction : p.getActions()){
-					//ATM só procura acçoes que neguem a pré condiçao e "promove-as" com uma ordering constraint
-					for(Literal postCondition : planAction.getPostConditions()){
-						if(postCondition.equals(preCondition) && postCondition.getValue() != preCondition.getValue()){ //metodo equals
-							p.getOrderingConstraints().add(new Ordering(planAction, ai));
-						}
-					}
-				}
+//				for(Action planAction : p.getActions()){
+//					//ATM só procura acçoes que neguem a pré condiçao e "promove-as" com uma ordering constraint
+//					for(Literal postCondition : planAction.getPostConditions()){
+//						if(postCondition.equals(preCondition) && postCondition.getValue() != preCondition.getValue()){ //metodo equals
+//							p.getOrderingConstraints().add(new Ordering(planAction, ai));
+//						}
+//					}
+//				}
 				
 				return pop(p, agenda);
 			}
@@ -68,7 +73,7 @@ public class PoP {
 	private void relevantActions(Literal preCondition, List<Action> allActions, List<Action> providers) {
 		for(Action a : allActions){
 			for(Literal l : a.getPostConditions()){
-				if(l.equals(preCondition) && l.getValue() == preCondition.getValue()){
+				if(l.getName().equals(preCondition.getName()) && l.getValue() == preCondition.getValue()){
 					providers.add(a);
 				}
 			}
