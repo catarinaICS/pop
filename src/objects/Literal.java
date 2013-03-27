@@ -1,18 +1,31 @@
 package objects;
 
-import java.util.Map;
+import java.util.List;
 
 public class Literal {
 	
 	private String name;
-	private Map<String, String> args;
+	private List<String> formalArguments;
+	private List<String> actualArguments;
+//	private Map<String, String> args;
 	private boolean value;
 	private boolean isSatisfied;
 	
-	public Literal(String name, Map<String, String> args, boolean value) {
+	
+	
+//	public Literal(String name, Map<String, String> args, boolean value) {
+//		super();
+//		this.name = name;
+//		this.args = args;
+//		this.value = value;
+//	}
+
+	public Literal(String name, List<String> formalArguments,
+			List<String> actualArguments, boolean value) {
 		super();
 		this.name = name;
-		this.args = args;
+		this.formalArguments = formalArguments;
+		this.actualArguments = actualArguments;
 		this.value = value;
 	}
 
@@ -24,12 +37,30 @@ public class Literal {
 		this.name = name;
 	}
 
-	public Map<String, String> getArgs() {
-		return args;
+	
+	
+//	public Map<String, String> getArgs() {
+//		return args;
+//	}
+//
+//	public void setArgs(Map<String, String> args) {
+//		this.args = args;
+//	}
+
+	public List<String> getFormalArguments() {
+		return formalArguments;
 	}
 
-	public void setArgs(Map<String, String> args) {
-		this.args = args;
+	public void setFormalArguments(List<String> formalArguments) {
+		this.formalArguments = formalArguments;
+	}
+
+	public List<String> getActualArguments() {
+		return actualArguments;
+	}
+
+	public void setActualArguments(List<String> actualArguments) {
+		this.actualArguments = actualArguments;
 	}
 
 	public boolean getValue() {
@@ -56,7 +87,7 @@ public class Literal {
 		if(value == false ){
 			litValue = "not ";
 		}
-		return litValue + name + args.keySet();
+		return litValue + name + formalArguments;
 	}
 	
 	

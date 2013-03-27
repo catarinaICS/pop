@@ -1,23 +1,38 @@
 package objects;
 
 import java.util.List;
-import java.util.Map;
 
 public class Action {
+
+	
 
 	private List<Literal> preConditions;
 	private List<Literal> postConditions;
 	private String name;
-	private Map<String, String> args;
-
+	private List<String> formalArguments;
+	private List<String> actualArguments;
+//	private Map<String, String> args;
+	
 	public Action(List<Literal> preConditions, List<Literal> postConditions,
-			String name, Map<String, String> args) {
+			String name, List<String> formalArguments,
+			List<String> actualArguments) {
 		super();
 		this.preConditions = preConditions;
 		this.postConditions = postConditions;
 		this.name = name;
-		this.args = args;
+		this.formalArguments = formalArguments;
+		this.actualArguments = actualArguments;
 	}
+//
+//	public Action(List<Literal> preConditions, List<Literal> postConditions,
+//			String name, Map<String, String> args) {
+//		super();
+//		this.preConditions = preConditions;
+//		this.postConditions = postConditions;
+//		this.name = name;
+//		this.args = args;
+//	}
+
 
 	public List<Literal> getPreConditions() {
 		return preConditions;
@@ -42,18 +57,40 @@ public class Action {
 	public void setName(String name) {
 		this.name = name;
 	}
-
-	public Map<String, String> getArgs() {
-		return args;
-	}
-
-	public void setArgs(Map<String, String> args) {
-		this.args = args;
-	}
 	
+	
+
+//	public Map<String, String> getArgs() {
+//		return args;
+//	}
+//
+//	public void setArgs(Map<String, String> args) {
+//		this.args = args;
+//	}
+	
+	public List<String> getFormalArguments() {
+		return formalArguments;
+	}
+
+
+	public void setFormalArguments(List<String> formalArguments) {
+		this.formalArguments = formalArguments;
+	}
+
+
+	public List<String> getActualArguments() {
+		return actualArguments;
+	}
+
+
+	public void setActualArguments(List<String> actualArguments) {
+		this.actualArguments = actualArguments;
+	}
+
+
 	@Override
 	public String toString() {
-		return preConditions + " -> " + name +"("+ args.keySet() + ") -> " + postConditions; 
+		return preConditions + " -> " + name +"("+ formalArguments + ") -> " + postConditions; 
 	}
 
 }
