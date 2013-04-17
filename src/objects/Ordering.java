@@ -28,7 +28,10 @@ public class Ordering {
 	}
 	
 	
-	
+	@Override
+	public String toString() {
+		return "(" + first + " < " + second + ")";
+	}
 	
 
 }

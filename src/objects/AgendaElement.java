@@ -27,7 +27,10 @@ public class AgendaElement {
 		this.action = action;
 	}
 	
-	
+	@Override
+	public String toString() {
+		return preCondition + " - " + action;
+	}
 	
 	
 }

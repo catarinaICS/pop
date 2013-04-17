@@ -1,5 +1,6 @@
 package objects;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Literal {
@@ -27,6 +28,11 @@ public class Literal {
 		this.formalArguments = formalArguments;
 		this.actualArguments = actualArguments;
 		this.value = value;
+	}
+	
+	public Literal createCopy() {
+		List<String> cloneActualArguments = new ArrayList<String>(actualArguments);
+		return new Literal(name, formalArguments, cloneActualArguments, value);
 	}
 
 	public String getName() {
@@ -87,7 +93,7 @@ public class Literal {
 		if(value == false ){
 			litValue = "not ";
 		}
-		return litValue + name + formalArguments;
+		return litValue + name + formalArguments + " - " + actualArguments;
 	}
 	
 	

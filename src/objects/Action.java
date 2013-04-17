@@ -1,5 +1,6 @@
 package objects;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Action {
@@ -32,6 +33,36 @@ public class Action {
 //		this.name = name;
 //		this.args = args;
 //	}
+	
+	public Action createCopy(){
+		List<Literal> clonePreConditions = cloneLiteralList(preConditions);
+		List<Literal> clonePostConditions = cloneLiteralList(postConditions);
+		List<String> cloneFormalArguments = cloneStringList(formalArguments);
+		List<String> cloneActualArguments = cloneStringList(actualArguments);
+		return new Action(clonePreConditions, clonePostConditions, name, cloneFormalArguments, cloneActualArguments);
+		
+	}
+	
+	private List<String> cloneStringList(List<String> listToClone){
+		List<String> clone = new ArrayList<String>();
+		for(String s : listToClone){
+			String copy = new String(s);
+			clone.add(copy);
+		}
+		return clone;
+	}
+	
+	private List<Literal> cloneLiteralList(List<Literal> listToClone){
+		List<Literal> clone = new ArrayList<Literal>();
+		for(Literal l : listToClone){
+			List<String> actualArgumentsCopy = cloneStringList(l.getActualArguments());
+			List<String> formalArgumentsCopy = cloneStringList(l.getFormalArguments());
+			Literal clonedLiteral = new Literal(l.getName(), formalArgumentsCopy, actualArgumentsCopy, l.getValue());
+			clone.add(clonedLiteral);
+		}
+		return clone;
+	}
+	
 
 
 	public List<Literal> getPreConditions() {
@@ -86,11 +117,13 @@ public class Action {
 	public void setActualArguments(List<String> actualArguments) {
 		this.actualArguments = actualArguments;
 	}
+	
+	
 
 
 	@Override
 	public String toString() {
-		return preConditions + " -> " + name +"("+ formalArguments + ") -> " + postConditions; 
+		return name +"("+ formalArguments +" "+ actualArguments +")"; 
 	}
 
 }
