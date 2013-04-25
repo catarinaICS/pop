@@ -8,18 +8,8 @@ public class Literal {
 	private String name;
 	private List<String> formalArguments;
 	private List<String> actualArguments;
-//	private Map<String, String> args;
 	private boolean value;
 	private boolean isSatisfied;
-	
-	
-	
-//	public Literal(String name, Map<String, String> args, boolean value) {
-//		super();
-//		this.name = name;
-//		this.args = args;
-//		this.value = value;
-//	}
 
 	public Literal(String name, List<String> formalArguments,
 			List<String> actualArguments, boolean value) {
@@ -42,16 +32,6 @@ public class Literal {
 	public void setName(String name) {
 		this.name = name;
 	}
-
-	
-	
-//	public Map<String, String> getArgs() {
-//		return args;
-//	}
-//
-//	public void setArgs(Map<String, String> args) {
-//		this.args = args;
-//	}
 
 	public List<String> getFormalArguments() {
 		return formalArguments;
@@ -85,15 +65,18 @@ public class Literal {
 		this.isSatisfied = isSatisfied;
 	}
 	
-	
-	
 	@Override
 	public String toString() {
 		String litValue = "";
 		if(value == false ){
 			litValue = "not ";
 		}
-		return litValue + name + formalArguments + " - " + actualArguments;
+		if(actualArguments.isEmpty()){
+			return litValue + name + formalArguments;
+		}else{
+			return litValue + name + actualArguments;
+		}
+		
 	}
 	
 	

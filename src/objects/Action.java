@@ -24,16 +24,7 @@ public class Action {
 		this.formalArguments = formalArguments;
 		this.actualArguments = actualArguments;
 	}
-//
-//	public Action(List<Literal> preConditions, List<Literal> postConditions,
-//			String name, Map<String, String> args) {
-//		super();
-//		this.preConditions = preConditions;
-//		this.postConditions = postConditions;
-//		this.name = name;
-//		this.args = args;
-//	}
-	
+
 	public Action createCopy(){
 		List<Literal> clonePreConditions = cloneLiteralList(preConditions);
 		List<Literal> clonePostConditions = cloneLiteralList(postConditions);
@@ -89,16 +80,6 @@ public class Action {
 		this.name = name;
 	}
 	
-	
-
-//	public Map<String, String> getArgs() {
-//		return args;
-//	}
-//
-//	public void setArgs(Map<String, String> args) {
-//		this.args = args;
-//	}
-	
 	public List<String> getFormalArguments() {
 		return formalArguments;
 	}
@@ -123,7 +104,12 @@ public class Action {
 
 	@Override
 	public String toString() {
-		return name +"("+ formalArguments +" "+ actualArguments +")"; 
+		if(actualArguments.isEmpty()){
+			return name + formalArguments;
+		}else{
+			return name + actualArguments;
+		}
+		 
 	}
 
 }
