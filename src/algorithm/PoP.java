@@ -1,5 +1,6 @@
 package algorithm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,25 +10,53 @@ import objects.CausalLink;
 import objects.Literal;
 import objects.Ordering;
 import objects.Plan;
+import objects.Threat;
+import objects.VariableBinding;
+import pddl.PddlToClassConverter;
+import uk.ac.bham.cs.zas.pddl.parser.InvalidPDDLElementException;
+import uk.ac.bham.cs.zas.pddl.parser.PDDLSyntaxException;
 
 public class PoP {
-	//variáveis//
+	
+	
 	private List<String> variablesUsed = new ArrayList<String>();
 	private int variableCounter = 1;
-	//---------//
-	private Domain domain;
-
-	public PoP(Domain domain) {
-		super();
-		this.domain = domain;
+	
+	private List<Action> domainActions;
+	private Action start;
+	private Action finish;
+	
+	private Plan plan;
+	private  List<AgendaElement> agenda = new ArrayList<AgendaElement>();
+	
+	private void init(){
+		try {
+			PddlToClassConverter converter = new PddlToClassConverter();
+			domainActions = converter.getDomainActions();
+			start = converter.getInitAction();
+			finish = converter.getFinishAction();
+			List<Action> planActions = new ArrayList<Action>();
+			planActions.add(start);
+			planActions.add(finish);
+			List<Ordering> ordering = new ArrayList<Ordering>();
+			ordering.add(new Ordering(start, finish));
+			for(Literal l : finish.getPreConditions()){
+				AgendaElement element = new AgendaElement(l, finish);
+				agenda.add(element);
+			}
+			plan = new Plan(planActions, ordering, new ArrayList<CausalLink>(), new ArrayList<VariableBinding>());
+		} catch (IOException | PDDLSyntaxException
+				| InvalidPDDLElementException e) {
+			System.err.println("Error with PDDL");
+		}
+		
+		
 	}
 	
-	
-	/*
-	 * O QUE FALTA; - VERIFICAR CONSISTENCIA DO PLANO - RESOLVER THREATS - ... -
-	 */
-	public Plan pop(Plan plan, List<AgendaElement> agenda) {
+	public Plan pop() {
+		init();
 		while (!agenda.isEmpty()) {
+			
 			AgendaElement element = agenda.remove(0);
 			Literal preCondition = element.getPreCondition();
 			Action aj = element.getAction();
@@ -36,13 +65,122 @@ public class PoP {
 				System.err.println("No Actions available");
 				System.exit(0);
 			} else {
-				Action ai = relevant.get(0);
-				addCausalLink(plan, preCondition, aj, ai);
-				updateBindingConstraints();
-				if (!plan.getActions().contains(ai)) {
-					updatePlan(plan, agenda, aj, ai);
+				
+				
+				boolean planIsConsistent = false;
+				while(!planIsConsistent){
+					List<AgendaElement> agendaCache = new ArrayList<AgendaElement>();
+					Action ai = relevant.remove(0);
+					System.out.println("Escolhi a acção " + ai);
+					CausalLink link = new CausalLink(ai, preCondition, aj);
+					plan.getCausalLinks().add(link);
+					updateBindingConstraints(plan, preCondition, ai);
+					Ordering o = new Ordering(ai, aj);
+					plan.getOrderingConstraints().add(o);
+					if (!plan.getActions().contains(ai)) {
+						updatePlan(plan, agenda, aj, ai, agendaCache);
+					}
+					Ordering resolver = null;
+					Threat t = findThreat(plan, ai);
+					Threat t2 = null;
+					if(t != null){
+						System.out.println("A acção " + ai + "é uma ameaça ao link " + t.getThreatened());
+						//promover
+						System.out.println("Vou promover");
+						if(!t.getThreatAfterAi().getFirst().getName().equals(start.getName())){
+							System.out.println("Posso promover.");
+							plan.getOrderingConstraints().remove(t.getThreatAfterAi());
+							plan.getOrderingConstraints().remove(t.getThreatBeforeAj());
+							resolver = new Ordering(ai, t.getThreatAfterAi().getFirst());
+							plan.getOrderingConstraints().add(resolver);
+							t2 = findThreat(plan, ai);
+							if(t2 != null){
+								System.out.println("A promoção não resultou, vou demover");
+								if(!t.getThreatBeforeAj().getSecond().getName().equals(finish.getName())){
+									plan.getOrderingConstraints().remove(resolver);
+									resolver = new Ordering(t.getThreatBeforeAj().getSecond(), ai);
+									plan.getOrderingConstraints().add(resolver);
+									t2 = findThreat(plan, ai);
+									if(t2 != null){
+										System.out.println("Nenhum dos resolvers resultou e temos que seleccionar outra acção");
+										//remover o que foi adicionado à agenda;
+										for(AgendaElement el : agendaCache){
+											agenda.remove(el);
+										}
+										//remover a acção;
+										plan.getActions().remove(ai);
+										//remover as orderings 
+										plan.getOrderingConstraints().remove(resolver);
+										//remover o causal link
+										plan.getCausalLinks().remove(link);
+									}else{
+										System.out.println("A demoção resultou");
+										planIsConsistent = true;
+									}
+								}else{//promoção nao resultou e não se pode demover
+									System.out.println("Não posso demover porque Ai ficaria depois da acção final, tenho que escolher outra acção");
+									//remover o que foi adicionado à agenda;
+									for(AgendaElement el : agendaCache){
+										agenda.remove(el);
+									}
+									//remover a acção;
+									plan.getActions().remove(ai);
+									//remover as orderings 
+										plan.getOrderingConstraints().remove(resolver);
+									//remover o causal link
+									plan.getCausalLinks().remove(link);
+								}
+							}else{
+								System.out.println("A promoção resultou");
+								planIsConsistent = true;
+							}
+						}else{ //não podemos promover. Tentar demover então
+							System.out.println("Não posso promover porque Ai ficaria antes da acção inicial");
+							if(t.getThreatBeforeAj().getSecond().getName().equals(finish.getName())){
+								System.out.println("Posso apenas demover");
+								resolver = new Ordering(ai, t.getThreatAfterAi().getFirst());
+								plan.getOrderingConstraints().remove(t.getThreatAfterAi());
+								plan.getOrderingConstraints().remove(t.getThreatBeforeAj());
+								plan.getOrderingConstraints().add(resolver);
+								t2 = findThreat(plan, ai);
+								if(t2 != null){
+									System.out.println("Tenho que escolher outra acção");
+									//remover o que foi adicionado à agenda;
+									for(AgendaElement el : agendaCache){
+										agenda.remove(el);
+									}
+									//remover a acção;
+									plan.getActions().remove(ai);
+									//remover as orderings 
+										plan.getOrderingConstraints().remove(resolver);
+									//remover o causal link
+									plan.getCausalLinks().remove(link);
+									
+								}else{
+									System.out.println("a demoção resultou");
+									planIsConsistent = true;
+								}
+								
+							}else{//não podemos demover.escolher outra acção - não foram feitos resolvers.
+								System.out.println("Não posso demover porque Ai ficaria depois da acção final. Escolher outra acção");
+								for(AgendaElement el : agendaCache){
+									agenda.remove(el);
+								}
+								//remover a acção;
+								plan.getActions().remove(ai);
+								//remover as orderings~
+									plan.getOrderingConstraints().remove(o);
+									plan.getCausalLinks().remove(link);
+								
+							}
+						}
+						
+					}else{
+						planIsConsistent = true;
+					}
+					
+					
 				}
-				resolveThreats();
 
 			}
 		}
@@ -50,37 +188,143 @@ public class PoP {
 		return plan;
 
 	}
-
-
-	private void resolveThreats() {
-		// TODO Auto-generated method stub
-		
+	
+	private Threat findThreat(Plan plan, Action a){
+		for(CausalLink planLink : plan.getCausalLinks()){
+			Ordering aAfterAi = findMatchingOrder(planLink.getFirst(), a, plan.getOrderingConstraints());
+			Ordering aBeforeAj = findMatchingOrder(a, planLink.getSecond(), plan.getOrderingConstraints());
+			if(aAfterAi != null && aBeforeAj != null){
+				Literal preC = planLink.getAchieved();
+				if(a.effectsContainLiteralNegation(preC, variablesUsed)){
+					return new Threat(aAfterAi, aBeforeAj, planLink);
+				}
+			}
+		}
+		return null;
 	}
 
-	private void updateBindingConstraints() {
-		// TODO Auto-generated method stub
-	}
-
-	private void addCausalLink(Plan plan, Literal preCondition, Action aj,
+	private void updateBindingConstraints(Plan plan, Literal preCondition,
 			Action ai) {
-		CausalLink link = new CausalLink(ai, preCondition, aj);
-		plan.getCausalLinks().add(link);
+		boolean containsVarBindings = preConditionContainsVariableBindings(preCondition);
+		boolean actionLiteralIsInstantiated = actionLiteralIsInstantiated(preCondition, ai);
+		if(containsVarBindings && actionLiteralIsInstantiated){
+			for(String var : preCondition.getActualArguments()){
+				if(variablesUsed.contains(var)){
+					findMatchingVariables(plan, preCondition, ai, var);
+				}
+			}
+		}
 	}
+
+	private void findMatchingVariables(Plan plan, Literal preCondition,
+			Action ai, String var) {
+		int index = preCondition.getActualArguments().indexOf(var);
+		for(Literal l : ai.getEffects()){
+			if(l.getName().equals(preCondition.getName())){
+				String possibleValue = l.getActualArguments().get(index);
+				plan.getVariableBindings().add(new VariableBinding(var, possibleValue));
+			}
+		}
+	}
+
+	private boolean actionLiteralIsInstantiated(Literal preCondition, Action ai) {
+		boolean actionLiteralIsInstantiated = true;
+		for(Literal l : ai.getEffects()){
+			if(l.getName().equals(preCondition.getName())){
+				for(String litVar : l.getActualArguments()){
+					if(variablesUsed.contains(litVar)){
+						actionLiteralIsInstantiated = false;
+					}
+				}
+			}
+		}
+		return actionLiteralIsInstantiated;
+	}
+
+	private boolean preConditionContainsVariableBindings(Literal preCondition) {
+		boolean containsVarBindings = false;
+		for(String var : preCondition.getActualArguments()){
+			if(variablesUsed.contains(var)){
+				containsVarBindings = true;
+			}
+		}
+		return containsVarBindings;
+	}
+
+	private Ordering findMatchingOrder(Action first, Action second, List<Ordering> orderConstraints){
+		Ordering firstBeforeSecond = null;
+		for(Ordering o : orderConstraints ){
+			if(o.getFirst().equals(first) && o.getSecond().equals(second)){
+				firstBeforeSecond = o;
+			}
+		}
+		return firstBeforeSecond;
+	}
+	
+	
+
+//	private void resolveThreats(CausalLink newLink, Plan plan) {
+//		Literal achieved = newLink.getAchieved() ;
+//		for(Action a : plan.getActions()){
+//			for(Literal post : a.getPostConditions()){
+//				boolean equalNames = post.getName().equals(achieved.getName());
+//				boolean differentValues = (achieved.getValue() != post.getValue());
+//				boolean matchingArgs = literalArgumentsMatch(achieved, post, equalNames, differentValues);
+//				if(equalNames && differentValues && matchingArgs){
+//					Ordering aiBeforeA = findMatchingOrder(newLink.getFirst(), a, plan.getOrderingConstraints());
+//					Ordering aBeforeAj = findMatchingOrder(a, newLink.getSecond(), plan.getOrderingConstraints());
+//					if(aiBeforeA != null && aBeforeAj != null){
+//						System.out.println("A acção " + a + "é uma ameaça ao link " + newLink);
+//					}
+//					
+//						
+//						
+//					
+//				}
+//			}
+//		}
+//	}
+
+//	private boolean literalArgumentsMatch(Literal achieved, Literal post,
+//			boolean equalNames, boolean differentValues) {
+//		boolean matchingArgs = true;
+//		if(equalNames && differentValues){
+//			for(String arg : achieved.getActualArguments()){
+//				int index = achieved.getActualArguments().indexOf(arg);
+//				try{
+//					if(!arg.equals(post.getActualArguments().get(index)) && !variablesUsed.contains(arg)){
+//						matchingArgs = false;
+//					}
+//				}catch(IndexOutOfBoundsException e ){
+//					System.out.println();
+//				}
+//				
+//			}
+//		}
+//		return matchingArgs;
+//	}
+
+	
+
+	
 
 	private void updatePlan(Plan plan, List<AgendaElement> agenda, Action aj,
-			Action ai) {
+			Action ai, List<AgendaElement> agendaCache) {
 		plan.getActions().add(ai); // add to plan actions
 		// update ordering constraints
-		plan.getOrderingConstraints().add(new Ordering(ai, aj));
+		
 		for (Literal l : ai.getPreConditions()) { // update agenda
-			agenda.add(new AgendaElement(l, ai));
+			AgendaElement el = new AgendaElement(l, ai);
+			agenda.add(el);
+			agendaCache.add(el);
+			
 		}
 	}
 
 	private List<Action> providers(Literal preCondition, Plan p) {
 		List<Action> providers = new ArrayList<Action>();
 		relevantActions(preCondition, p.getActions(), providers);
-		relevantActions(preCondition, domain.getDomainActions(), providers);
+		relevantActions(preCondition, domainActions, providers);
 		return providers;
 
 	}
@@ -88,60 +332,35 @@ public class PoP {
 	private void relevantActions(Literal preCondition, List<Action> allActions,
 			List<Action> providers) {
 		for (Action possibleAction : allActions) {
-			for (Literal literalToCompare : possibleAction.getPostConditions()) {
-				if (literalToCompare.getName().equals(preCondition.getName())
-						&& literalToCompare.getValue() == preCondition
-								.getValue()) {
+			for (Literal literalToCompare : possibleAction.getEffects()) {
+				boolean namesAreEqual = literalToCompare.getName().equals(preCondition.getName());
+				boolean valuesAreEqual = literalToCompare.getValue() == preCondition.getValue();
+				if (namesAreEqual && valuesAreEqual) {
 
-					// se os argumentos forem todos null -> o literal serve, mas
-					// nao está instanciado. É necessário instanciar a acção,
-					// pré e pos condições
-
-					if (literalToCompare.getActualArguments().isEmpty()) {
-						// criar uma cópia da acção que encaixa e do literal
-						// para instanciar.
+					if (literalToCompare.getActualArguments().isEmpty()) { //a acçao serve mas nao está instanciada.
+						//create copies so we won't mess with the original objects.
 						Action actionCopy = possibleAction.createCopy();
 						Literal literalCopy = literalToCompare.createCopy();
-
-						// instanciar o literal que correspondeu à pré condição
-						// que estamos a procurar com os argumentos de
-						// preCOndition
+						
 						literalCopy.setActualArguments(preCondition
 								.getActualArguments());
-						// fazer corresponder os argumentos da acçao
-						// ou seja stack(a,b) -> on(a,b), por exemplo. se tenho
-						// literalCopy = on(a,b)
-						// e uma acção nao instanciada (sem argumentos), temos
-						// que instanciar.
 
 						instantateAction(actionCopy, literalCopy);
-						// a acção está agora instanciada. Argumentos sem
-						// correspondência = variable bindings.
 						instantiatePreConditions(actionCopy);
 						instantiatePostConditions(actionCopy);
 						providers.add(actionCopy);
 
-					} else {// temos um literal instanciado pelo que é
-							// necessário verificar se é igual à nossa pre
-							// condição.
+					} else { //literal já instanciado
 						boolean equals = true;
-						
-						for (int i = 0; i < preCondition.getActualArguments()
-								.size(); i++) {
-							String preConditionArg = preCondition
-									.getActualArguments().get(i);
-							String literalArg = literalToCompare
-									.getActualArguments().get(i);
-							
-							if (variablesUsed.contains(preCondition
-									.getActualArguments().get(i))) {
-								System.out.println("I'm a variable binding!");// para
-																				// apagar
-																				// eventualmente.
-							} else {
-								if (!preConditionArg.equals(literalArg)) {
-									equals = false;
-								}
+						int argumentsSize = preCondition.getActualArguments().size();
+						for (int i = 0; i < argumentsSize ; i++) {
+							String preConditionArg = preCondition.getActualArguments().get(i);
+							String literalArg = literalToCompare.getActualArguments().get(i);
+							boolean isVariableBinding = variablesUsed.contains(preConditionArg);
+							boolean equalArgs = preConditionArg.equals(literalArg);
+							if (!isVariableBinding && !equalArgs) {
+								//variable binding.
+								equals = false;
 							}
 						}
 
@@ -170,7 +389,7 @@ public class PoP {
 	}
 
 	private void instantiatePostConditions(Action actionCreated) {
-		for (Literal l : actionCreated.getPostConditions()) {
+		for (Literal l : actionCreated.getEffects()) {
 			for (String formalArg : l.getFormalArguments()) {
 				int i = actionCreated.getFormalArguments().indexOf(formalArg);
 				l.getActualArguments().add(

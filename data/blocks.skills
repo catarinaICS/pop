@@ -1,0 +1,26 @@
+(define (domain Blocks)
+(:requirements :fluents)
+
+(:predicates
+	     (clear ?b)
+	     (on ?a ?b)
+	     (ontable ?b)
+)
+
+(:action move
+	:parameters (?a ?b ?c)
+	:precondition (and (on ?a ?b) (clear ?c) (clear ?a))
+	:effect (and (clear ?b) (on ?a ?c) 
+			(not (on ?a ?b)) (not (clear ?c)) ) )
+			
+(:action stack
+	:parameters (?a ?b)
+	:precondition (and (clear ?b) (ontable ?a) (clear ?a))
+	:effect (and (on ?a ?b)
+			(not (clear ?b)) (not (ontable ?a)) ) )
+			
+(:action unstack
+	:parameters (?a ?b)
+	:precondition (and (clear ?a) (on ?a ?b))
+	:effect (and (clear ?b) (ontable ?a)
+			(not (on ?a ?b)) ) ) )

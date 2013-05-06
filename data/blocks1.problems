@@ -1,0 +1,11 @@
+(define (problem blocks1)
+	(:domain Blocks)
+	
+	(:objects a b c )
+	
+	(:init (ontable a) (on b a) (on c b) (clear c) )
+
+	(:goal (and (ontable c) (on b c) (on a b) ) ) )
+
+    (:metric minimize total-time)
+)

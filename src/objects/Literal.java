@@ -9,7 +9,7 @@ public class Literal {
 	private List<String> formalArguments;
 	private List<String> actualArguments;
 	private boolean value;
-	private boolean isSatisfied;
+//	private boolean isSatisfied;
 
 	public Literal(String name, List<String> formalArguments,
 			List<String> actualArguments, boolean value) {
@@ -56,14 +56,28 @@ public class Literal {
 	public void setValue(boolean value) {
 		this.value = value;
 	}
-
-	public boolean isSatisfied() {
-		return isSatisfied;
+	
+	public boolean argumentsMatch(Literal otherLiteral, List<String> variablesUsed){
+		boolean matchingArgs = true;
+		for(String arg : otherLiteral.getActualArguments()){
+			int index = otherLiteral.getActualArguments().indexOf(arg);
+			String myArg = actualArguments.get(index); 
+			if(!myArg.equals(arg) && !variablesUsed.contains(myArg) && !variablesUsed.contains(arg)){
+				matchingArgs = false;
+			}
+		}
+		return matchingArgs;
 	}
+	
+	
 
-	public void setSatisfied(boolean isSatisfied) {
-		this.isSatisfied = isSatisfied;
-	}
+//	public boolean isSatisfied() {
+//		return isSatisfied;
+//	}
+//
+//	public void setSatisfied(boolean isSatisfied) {
+//		this.isSatisfied = isSatisfied;
+//	}
 	
 	@Override
 	public String toString() {
