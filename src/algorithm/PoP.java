@@ -3,7 +3,6 @@ package algorithm;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import objects.Action;
 import objects.AgendaElement;
 import objects.CausalLink;
@@ -20,7 +19,6 @@ public class PoP {
 
 	private List<String> variablesUsed = new ArrayList<String>();
 	private int variableCounter = 1;
-
 	private List<Action> domainActions;
 	private Action start;
 	private Action finish;
@@ -64,93 +62,127 @@ public class PoP {
 			} else {
 				boolean planIsConsistent = false;
 				while (!planIsConsistent) {
+					boolean orderingThreatExisting = false;
+					boolean variableThreatExisting = false;
 					List<AgendaElement> agendaCache = new ArrayList<AgendaElement>();
 					List<VariableBinding> variablesCache = new ArrayList<VariableBinding>();
 					Action ai = relevant.remove(0); //choose an operator
 					System.out.println("Escolhi a acção " + ai);
 					CausalLink link = new CausalLink(ai, preCondition, aj);
 					plan.getCausalLinks().add(link);
-					updateBindingConstraints(plan, preCondition, ai,
-							variablesCache);
 					Ordering o = new Ordering(ai, aj);
 					plan.getOrderingConstraints().add(o); //add ordering constraint
-					if (!plan.getActions().contains(ai)) {
-						updatePlan(plan, agenda, aj, ai, agendaCache);
-					}
-					Ordering resolver = null;
-					Threat t = findThreat(plan, ai);
-					Threat t2 = null;
-					if (t != null) {
-						System.out.println("A acção " + ai
-								+ "é uma ameaça ao link " + t.getThreatened());
-						// promover
-						System.out.println("Vou promover");
-						if (!t.getThreatAfterAi().getFirst().getName()
-								.equals(start.getName())) {
-							System.out.println("Posso promover.");
-							resolver = promote(ai, t);
-							t2 = findThreat(plan, ai);
-							if (t2 != null) {
-								System.out
-										.println("A promoção não resultou, vou demover");
-								if (!t.getThreatBeforeAj().getSecond()
-										.getName().equals(finish.getName())) {
-									resolver = demote(ai, resolver, t);
-									t2 = findThreat(plan, ai);
-									if (t2 != null) {
-										System.out
-												.println("Nenhum dos resolvers resultou e temos que seleccionar outra acção");
-										removeDataAddedFromPlan(agendaCache,
-												variablesCache, ai, link,
-												resolver);
-									} else {
-										System.out
-												.println("A demoção resultou");
-										planIsConsistent = true;
+					boolean containsVarBindings = preConditionContainsVariableBindings(preCondition);
+					boolean actionLiteralIsInstantiated = actionLiteralIsInstantiated(
+							preCondition, ai);
+					if (containsVarBindings && actionLiteralIsInstantiated) {
+						for (String var : preCondition.getActualArguments()) {
+							if (variablesUsed.contains(var)) {
+								int index = preCondition.getActualArguments().indexOf(var);
+								for (Literal l : ai.getEffects()) {
+									if (l.getName().equals(preCondition.getName())) {
+										String possibleValue = l.getActualArguments().get(index);
+										VariableBinding newVar = new VariableBinding(var, possibleValue);
+										for(VariableBinding v : plan.getVariableBindings()){
+											if(v.getVariableName().equals(var) && !v.getVariableValue().equals(possibleValue)){
+												variableThreatExisting = true;
+												plan.getCausalLinks().remove(link);
+												plan.getOrderingConstraints().remove(o);
+												System.out.println("Não posso usar a acção " + ai + " porque já existem bindings");
+											}
+										}
+										if(!variableThreatExisting){
+											plan.getVariableBindings().add(newVar);
+											variablesCache.add(newVar);
+										}
 									}
-								} else {// promoção nao resultou e não se pode
-										// demover
-									System.out
-											.println("Não posso demover porque Ai ficaria depois da acção final, tenho que escolher outra acção");
-									removeDataAddedFromPlan(agendaCache,
-											variablesCache, ai, link, resolver);
 								}
-							} else {
-								System.out.println("A promoção resultou");
-								planIsConsistent = true;
 							}
-						} else { // não podemos promover. Tentar demover então
-							System.out
-									.println("Não posso promover porque Ai ficaria antes da acção inicial");
-							if (!t.getThreatBeforeAj().getSecond().getName()
-									.equals(finish.getName())) {
-								System.out.println("Posso apenas demover");
-								resolver = demote(ai, t);
+						}
+					}
+					if(!variableThreatExisting){
+						if (!plan.getActions().contains(ai)) {
+							updatePlan(plan, agenda, aj, ai, agendaCache);
+						}
+						Ordering resolver = null;
+						Threat t = findThreat(plan, ai);
+						Threat t2 = null;
+						if (t != null) {
+							System.out.println("A acção " + ai
+									+ "é uma ameaça ao link " + t.getThreatened());
+							// promover
+							System.out.println("Vou promover");
+							if (!t.getThreatAfterAi().getFirst().getName()
+									.equals(start.getName())) {
+								System.out.println("Posso promover.");
+								resolver = promote(ai, t);
 								t2 = findThreat(plan, ai);
 								if (t2 != null) {
 									System.out
-											.println("Tenho que escolher outra acção");
-									removeDataAddedFromPlan(agendaCache,
-											variablesCache, ai, link, resolver);
+											.println("A promoção não resultou, vou demover");
+									if (!t.getThreatBeforeAj().getSecond()
+											.getName().equals(finish.getName())) {
+										resolver = demote(ai, resolver, t);
+										t2 = findThreat(plan, ai);
+										if (t2 != null) {
+											System.out
+													.println("Nenhum dos resolvers resultou e temos que seleccionar outra acção");
+											removeDataAddedFromPlan(agendaCache,
+													variablesCache, ai, link,
+													resolver);
+										} else {
+											System.out
+													.println("A demoção resultou");
+											orderingThreatExisting = false;
+										}
+									} else {// promoção nao resultou e não se pode
+											// demover
+										System.out
+												.println("Não posso demover porque Ai ficaria depois da acção final, tenho que escolher outra acção");
+										removeDataAddedFromPlan(agendaCache,
+												variablesCache, ai, link, resolver);
+									}
 								} else {
-									System.out.println("a demoção resultou");
-									planIsConsistent = true;
+									System.out.println("A promoção resultou");
+									orderingThreatExisting = false;
 								}
-
-							} else {// não podemos demover.escolher outra acção
-									// - não foram feitos resolvers.
+							} else { // não podemos promover. Tentar demover então
 								System.out
-										.println("Não posso demover porque Ai ficaria depois da acção final. Escolher outra acção");
-								removeDataAddedFromPlan(agendaCache,
-										variablesCache, ai, link, o);
+										.println("Não posso promover porque Ai ficaria antes da acção inicial");
+								if (!t.getThreatBeforeAj().getSecond().getName()
+										.equals(finish.getName())) {
+									System.out.println("Posso apenas demover");
+									resolver = demote(ai, t);
+									t2 = findThreat(plan, ai);
+									if (t2 != null) {
+										System.out
+												.println("Tenho que escolher outra acção");
+										removeDataAddedFromPlan(agendaCache,
+												variablesCache, ai, link, resolver);
+									} else {
+										System.out.println("a demoção resultou");
+										orderingThreatExisting = false;
+									}
 
+								} else {// não podemos demover.escolher outra acção
+										// - não foram feitos resolvers.
+									System.out
+											.println("Não posso demover porque Ai ficaria depois da acção final. Escolher outra acção");
+									removeDataAddedFromPlan(agendaCache,
+											variablesCache, ai, link, o);
+
+								}
 							}
+
+						} else {
+							orderingThreatExisting = false;
 						}
-
-					} else {
-						planIsConsistent = true;
+						if(!orderingThreatExisting && !variableThreatExisting){
+							planIsConsistent = true;
+						}
 					}
-
+					
+					
 				}
 
 			}
@@ -231,25 +263,37 @@ public class PoP {
 		if (containsVarBindings && actionLiteralIsInstantiated) {
 			for (String var : preCondition.getActualArguments()) {
 				if (variablesUsed.contains(var)) {
-					findMatchingVariables(plan, preCondition, ai, var,
-							variablesCache);
+					int index = preCondition.getActualArguments().indexOf(var);
+					for (Literal l : ai.getEffects()) {
+						if (l.getName().equals(preCondition.getName())) {
+							String possibleValue = l.getActualArguments().get(index);
+							VariableBinding newVar = new VariableBinding(var, possibleValue);
+							for(VariableBinding v : plan.getVariableBindings()){
+								if(v.getVariableName().equals(var) && !v.getVariableValue().equals(possibleValue)){
+									System.out.println("NAO POSSO USAR A ACÇAO " +  " DEVIDO ÀS VARIAVEIS");
+								}
+							}
+							plan.getVariableBindings().add(newVar);
+							variablesCache.add(newVar);
+						}
+					}
 				}
 			}
 		}
 	}
 
-	private void findMatchingVariables(Plan plan, Literal preCondition,
-			Action ai, String var, List<VariableBinding> variablesCache) {
-		int index = preCondition.getActualArguments().indexOf(var);
-		for (Literal l : ai.getEffects()) {
-			if (l.getName().equals(preCondition.getName())) {
-				String possibleValue = l.getActualArguments().get(index);
-				VariableBinding newVar = new VariableBinding(var, possibleValue);
-				plan.getVariableBindings().add(newVar);
-				variablesCache.add(newVar);
-			}
-		}
-	}
+//	private void findMatchingVariables(Plan plan, Literal preCondition,
+//			Action ai, String var, List<VariableBinding> variablesCache) {
+//		int index = preCondition.getActualArguments().indexOf(var);
+//		for (Literal l : ai.getEffects()) {
+//			if (l.getName().equals(preCondition.getName())) {
+//				String possibleValue = l.getActualArguments().get(index);
+//				VariableBinding newVar = new VariableBinding(var, possibleValue);
+//				plan.getVariableBindings().add(newVar);
+//				variablesCache.add(newVar);
+//			}
+//		}
+//	}
 
 	private boolean actionLiteralIsInstantiated(Literal preCondition, Action ai) {
 		boolean actionLiteralIsInstantiated = true;
@@ -305,6 +349,7 @@ public class PoP {
 
 	}
 
+	
 	private void relevantActions(Literal preCondition, List<Action> allActions,
 			List<Action> providers) {
 		for (Action possibleAction : allActions) {

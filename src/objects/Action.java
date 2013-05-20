@@ -188,5 +188,14 @@ public class Action {
 		}
 		 
 	}
-
+	/*********/
+	public Literal matchingEffect(Literal preCondition, List<String> variablesUsed) {
+		for(Literal effect : effects){
+			if(effect.getName().equals(preCondition.getName()) && effect.getValue() == preCondition.getValue()){
+				return effect;
+			}
+		}
+		return null;
+	}
+	/************/
 }
