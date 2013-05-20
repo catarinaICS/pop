@@ -24,7 +24,6 @@ public class PoP {
 	private List<Action> domainActions;
 	private Action start;
 	private Action finish;
-
 	private Plan plan;
 	private List<AgendaElement> agenda = new ArrayList<AgendaElement>();
 
@@ -55,7 +54,7 @@ public class PoP {
 	public Plan pop() {
 		init();
 		while (!agenda.isEmpty()) {
-			AgendaElement element = agenda.remove(0);
+			AgendaElement element = agenda.remove(0); //select a sub goal
 			Literal preCondition = element.getPreCondition();
 			Action aj = element.getAction();
 			List<Action> relevant = providers(preCondition, plan);
@@ -67,14 +66,14 @@ public class PoP {
 				while (!planIsConsistent) {
 					List<AgendaElement> agendaCache = new ArrayList<AgendaElement>();
 					List<VariableBinding> variablesCache = new ArrayList<VariableBinding>();
-					Action ai = relevant.remove(0);
+					Action ai = relevant.remove(0); //choose an operator
 					System.out.println("Escolhi a acção " + ai);
 					CausalLink link = new CausalLink(ai, preCondition, aj);
 					plan.getCausalLinks().add(link);
 					updateBindingConstraints(plan, preCondition, ai,
 							variablesCache);
 					Ordering o = new Ordering(ai, aj);
-					plan.getOrderingConstraints().add(o);
+					plan.getOrderingConstraints().add(o); //add ordering constraint
 					if (!plan.getActions().contains(ai)) {
 						updatePlan(plan, agenda, aj, ai, agendaCache);
 					}
@@ -156,7 +155,6 @@ public class PoP {
 
 			}
 		}
-
 		return plan;
 
 	}
@@ -316,7 +314,6 @@ public class PoP {
 				boolean valuesAreEqual = literalToCompare.getValue() == preCondition
 						.getValue();
 				if (namesAreEqual && valuesAreEqual) {
-
 					if (literalToCompare.getActualArguments().isEmpty()) { // a
 																			// acçao
 																			// serve
