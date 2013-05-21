@@ -54,9 +54,11 @@ public class PoP {
 		while (!agenda.isEmpty()) {
 			AgendaElement element = agenda.remove(0); //select a sub goal
 			Literal preCondition = element.getPreCondition();
+			debug("Attempting to solve precondition: " + preCondition);
 			Action aj = element.getAction();
 			List<Action> relevant = providers(preCondition, plan);
-			if (relevant.isEmpty()) {
+			debug("Got relevant actions: " + relevant);
+			if (relevant.isEmpty()) { 
 				System.err.println("No Actions available");
 				System.exit(0);
 			} else {
@@ -67,122 +69,124 @@ public class PoP {
 					List<AgendaElement> agendaCache = new ArrayList<AgendaElement>();
 					List<VariableBinding> variablesCache = new ArrayList<VariableBinding>();
 					Action ai = relevant.remove(0); //choose an operator
-					System.out.println("Escolhi a acção " + ai);
-					CausalLink link = new CausalLink(ai, preCondition, aj);
-					plan.getCausalLinks().add(link);
-					Ordering o = new Ordering(ai, aj);
-					plan.getOrderingConstraints().add(o); //add ordering constraint
-					boolean containsVarBindings = preConditionContainsVariableBindings(preCondition);
-					boolean actionLiteralIsInstantiated = actionLiteralIsInstantiated(
-							preCondition, ai);
-					if (containsVarBindings && actionLiteralIsInstantiated) {
-						for (String var : preCondition.getActualArguments()) {
-							if (variablesUsed.contains(var)) {
-								int index = preCondition.getActualArguments().indexOf(var);
-								for (Literal l : ai.getEffects()) {
-									if (l.getName().equals(preCondition.getName())) {
-										String possibleValue = l.getActualArguments().get(index);
-										VariableBinding newVar = new VariableBinding(var, possibleValue);
-										for(VariableBinding v : plan.getVariableBindings()){
-											if(v.getVariableName().equals(var) && !v.getVariableValue().equals(possibleValue)){
-												variableThreatExisting = true;
-												plan.getCausalLinks().remove(link);
-												plan.getOrderingConstraints().remove(o);
-												System.out.println("Não posso usar a acção " + ai + " porque já existem bindings");
+					if(!ai.equals(aj)){
+						System.out.println("Escolhi a acção " + ai);
+						CausalLink link = new CausalLink(ai, preCondition, aj);
+						plan.getCausalLinks().add(link);
+						Ordering o = new Ordering(ai, aj);
+						plan.getOrderingConstraints().add(o); //add ordering constraint
+						boolean containsVarBindings = preConditionContainsVariableBindings(preCondition);
+						boolean actionLiteralIsInstantiated = actionLiteralIsInstantiated(
+								preCondition, ai);
+						if (containsVarBindings && actionLiteralIsInstantiated) {
+							for (String var : preCondition.getActualArguments()) {
+								if (variablesUsed.contains(var)) {
+									int index = preCondition.getActualArguments().indexOf(var);
+									for (Literal l : ai.getEffects()) {
+										if (l.getName().equals(preCondition.getName())) {
+											String possibleValue = l.getActualArguments().get(index);
+											VariableBinding newVar = new VariableBinding(var, possibleValue);
+											for(VariableBinding v : plan.getVariableBindings()){
+												if(v.getVariableName().equals(var) && !v.getVariableValue().equals(possibleValue)){
+													variableThreatExisting = true;
+													plan.getCausalLinks().remove(link);
+													plan.getOrderingConstraints().remove(o);
+													System.out.println("Não posso usar a acção " + ai + " porque já existem bindings");
+												}
 											}
-										}
-										if(!variableThreatExisting){
-											plan.getVariableBindings().add(newVar);
-											variablesCache.add(newVar);
+											if(!variableThreatExisting){
+												plan.getVariableBindings().add(newVar);
+												variablesCache.add(newVar);
+											}
 										}
 									}
 								}
 							}
 						}
-					}
-					if(!variableThreatExisting){
-						if (!plan.getActions().contains(ai)) {
-							updatePlan(plan, agenda, aj, ai, agendaCache);
-						}
-						Ordering resolver = null;
-						Threat t = findThreat(plan, ai);
-						Threat t2 = null;
-						if (t != null) {
-							System.out.println("A acção " + ai
-									+ "é uma ameaça ao link " + t.getThreatened());
-							// promover
-							System.out.println("Vou promover");
-							if (!t.getThreatAfterAi().getFirst().getName()
-									.equals(start.getName())) {
-								System.out.println("Posso promover.");
-								resolver = promote(ai, t);
-								t2 = findThreat(plan, ai);
-								if (t2 != null) {
-									System.out
-											.println("A promoção não resultou, vou demover");
-									if (!t.getThreatBeforeAj().getSecond()
-											.getName().equals(finish.getName())) {
-										resolver = demote(ai, resolver, t);
-										t2 = findThreat(plan, ai);
-										if (t2 != null) {
-											System.out
-													.println("Nenhum dos resolvers resultou e temos que seleccionar outra acção");
-											removeDataAddedFromPlan(agendaCache,
-													variablesCache, ai, link,
-													resolver);
-										} else {
-											System.out
-													.println("A demoção resultou");
-											orderingThreatExisting = false;
-										}
-									} else {// promoção nao resultou e não se pode
-											// demover
-										System.out
-												.println("Não posso demover porque Ai ficaria depois da acção final, tenho que escolher outra acção");
-										removeDataAddedFromPlan(agendaCache,
-												variablesCache, ai, link, resolver);
-									}
-								} else {
-									System.out.println("A promoção resultou");
-									orderingThreatExisting = false;
-								}
-							} else { // não podemos promover. Tentar demover então
-								System.out
-										.println("Não posso promover porque Ai ficaria antes da acção inicial");
-								if (!t.getThreatBeforeAj().getSecond().getName()
-										.equals(finish.getName())) {
-									System.out.println("Posso apenas demover");
-									resolver = demote(ai, t);
+						if(!variableThreatExisting){
+							if (!plan.getActions().contains(ai)) {
+								updatePlan(plan, agenda, aj, ai, agendaCache);
+							}
+							Ordering resolver = null;
+							Threat t = findThreat(plan, ai);
+							Threat t2 = null;
+							if (t != null) {
+								System.out.println("A acção " + ai
+										+ "é uma ameaça ao link " + t.getThreatened());
+								// promover
+								System.out.println("Vou promover");
+								if (!t.getThreatAfterAi().getFirst().getName()
+										.equals(start.getName())) {
+									System.out.println("Posso promover.");
+									resolver = promote(ai, t);
 									t2 = findThreat(plan, ai);
 									if (t2 != null) {
 										System.out
-												.println("Tenho que escolher outra acção");
-										removeDataAddedFromPlan(agendaCache,
-												variablesCache, ai, link, resolver);
+												.println("A promoção não resultou, vou demover");
+										if (!t.getThreatBeforeAj().getSecond()
+												.getName().equals(finish.getName())) {
+											resolver = demote(ai, resolver, t);
+											t2 = findThreat(plan, ai);
+											if (t2 != null) {
+												System.out
+														.println("Nenhum dos resolvers resultou e temos que seleccionar outra acção");
+												removeDataAddedFromPlan(agendaCache,
+														variablesCache, ai, link,
+														resolver);
+											} else {
+												System.out
+														.println("A demoção resultou");
+												orderingThreatExisting = false;
+											}
+										} else {// promoção nao resultou e não se pode
+												// demover
+											System.out
+													.println("Não posso demover porque Ai ficaria depois da acção final, tenho que escolher outra acção");
+											removeDataAddedFromPlan(agendaCache,
+													variablesCache, ai, link, resolver);
+										}
 									} else {
-										System.out.println("a demoção resultou");
+										System.out.println("A promoção resultou");
 										orderingThreatExisting = false;
 									}
-
-								} else {// não podemos demover.escolher outra acção
-										// - não foram feitos resolvers.
+								} else { // não podemos promover. Tentar demover então
 									System.out
-											.println("Não posso demover porque Ai ficaria depois da acção final. Escolher outra acção");
-									removeDataAddedFromPlan(agendaCache,
-											variablesCache, ai, link, o);
+											.println("Não posso promover porque Ai ficaria antes da acção inicial");
+									if (!t.getThreatBeforeAj().getSecond().getName()
+											.equals(finish.getName())) {
+										System.out.println("Posso apenas demover");
+										resolver = demote(ai, t);
+										t2 = findThreat(plan, ai);
+										if (t2 != null) {
+											System.out
+													.println("Tenho que escolher outra acção");
+											removeDataAddedFromPlan(agendaCache,
+													variablesCache, ai, link, resolver);
+										} else {
+											System.out.println("a demoção resultou");
+											orderingThreatExisting = false;
+										}
 
+									} else {// não podemos demover.escolher outra acção
+											// - não foram feitos resolvers.
+										System.out
+												.println("Não posso demover porque Ai ficaria depois da acção final. Escolher outra acção");
+										removeDataAddedFromPlan(agendaCache,
+												variablesCache, ai, link, o);
+
+									}
 								}
-							}
 
-						} else {
-							orderingThreatExisting = false;
+							} else {
+								orderingThreatExisting = false;
+							}
+							if(!orderingThreatExisting && !variableThreatExisting){
+								planIsConsistent = true;
+							}
 						}
-						if(!orderingThreatExisting && !variableThreatExisting){
-							planIsConsistent = true;
-						}
+					}else{
+						System.out.println("Não posso escolher a mesma acção!");
 					}
-					
-					
 				}
 
 			}
@@ -452,6 +456,14 @@ public class PoP {
 		variablesUsed.add(variable);
 		variableCounter++;
 		return variable;
+	}
+	
+	private static final boolean DEBUG = true;
+	
+	static void debug(String content) {
+		if(DEBUG) {
+			System.out.println(content);
+		}
 	}
 
 }
