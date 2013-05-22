@@ -198,4 +198,31 @@ public class Action {
 		return null;
 	}
 	/************/
+
+	public boolean isFullyInstantiated(List<String> variablesUsed) {
+		for(String arg : actualArguments){
+			if(variablesUsed.contains(arg)){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public void replaceVariables(VariableBinding newVar) {
+		List<String> newArgs = cloneStringList(actualArguments);
+		for(String arg : actualArguments){
+			int index = actualArguments.indexOf(arg);
+			if(arg.equals(newVar.getVariableName())){
+				newArgs.set(index, newVar.getVariableValue());
+			}
+		}
+		setActualArguments(newArgs);
+		
+		for(Literal preC : preConditions){
+			preC.replaceVariables(newVar);
+		}
+		for(Literal eff : effects){
+			eff.replaceVariables(newVar);
+		}
+	}
 }

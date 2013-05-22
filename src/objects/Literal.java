@@ -92,6 +92,36 @@ public class Literal {
 		}
 		
 	}
+
+	public boolean containsVariables(List<String> variablesUsed) {
+		for(String arg : actualArguments){
+			if(variablesUsed.contains(arg)){
+				return true;
+			}
+		}
+		return false;
+		
+	}
+
+	public void replaceVariables(VariableBinding newVar) {
+		List<String> newArgs = cloneStringList(actualArguments);
+		for(String arg : actualArguments){
+			int index = actualArguments.indexOf(arg);
+			if(arg.equals(newVar.getVariableName())){
+				newArgs.set(index, newVar.getVariableValue());
+			}
+		}
+		setActualArguments(newArgs);
+	}
+
+		private List<String> cloneStringList(List<String> listToClone){
+		List<String> clone = new ArrayList<String>();
+		for(String s : listToClone){
+			String copy = new String(s);
+			clone.add(copy);
+		}
+		return clone;
+	}
 	
 	
 	

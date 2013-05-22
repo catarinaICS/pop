@@ -59,7 +59,7 @@ public class PddlToClassConverter {
 	private void instantiateDomain(){
 		for(ActionDef domainAction : pddlDomain.getActions()){
 			String actionName = domainAction.getName();
-			//formal args da acçao
+			//formal args da acï¿½ao
 			List<String> actionArgs = instantiateFormalArgs(domainAction.getArguments());
 			
 			List<objects.Literal> actionPreConditions = getActionPreConditions(domainAction);
@@ -92,7 +92,7 @@ public class PddlToClassConverter {
 		for(GoalDesc preCondition : preC.getSubGoals()){
 			PredicateHeader precondition = (PredicateHeader) preCondition;
 			String preConditionName = precondition.definition.getName();
-			List<String> preConditionArgs = instantiateFormalArgs(precondition.definition.getArguments());
+			List<String> preConditionArgs = instantiateFormalArgs(precondition.arguments);
 			objects.Literal newPreCondition = new objects.Literal(preConditionName, preConditionArgs, new ArrayList<String>(), true);
 			actionPreConditions.add(newPreCondition);
 		}
@@ -104,7 +104,7 @@ public class PddlToClassConverter {
 		instantiateFinishAction();
 	}
 
-	private void instantiateFinishAction() { //acção só com pre condiçoes
+	private void instantiateFinishAction() { //acï¿½ï¿½o sï¿½ com pre condiï¿½oes
 		List<objects.Literal> preConditions = new ArrayList<objects.Literal>();
 		ConjunctionGoalDesc goal = (ConjunctionGoalDesc) problem.getGoal();
 		for(GoalDesc subGoal : goal.getSubGoals()){
