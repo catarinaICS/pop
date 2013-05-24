@@ -1,16 +1,21 @@
 package objects;
 
 import java.util.List;
+import java.util.Map;
+
+import planObjects.CausalLink;
+import planObjects.Ordering;
 
 public class Plan {
 	
 	private List<Action> actions;
 	private List<Ordering> orderingConstraints;
 	private List<CausalLink> causalLinks;
-	private List<VariableBinding> variableBindings;
+//	private List<VariableBinding> variableBindings;
+	private Map<String, String> variableBindings;
 	
 	public Plan(List<Action> actions, List<Ordering> orderingConstraints,
-			List<CausalLink> causalLinks,List<VariableBinding> variableBindings ) {
+			List<CausalLink> causalLinks,Map<String, String> variableBindings ) {
 		super();
 		this.actions = actions;
 		this.orderingConstraints = orderingConstraints;
@@ -42,11 +47,11 @@ public class Plan {
 		this.causalLinks = causalLinks;
 	}
 
-	public List<VariableBinding> getVariableBindings() {
+	public Map<String, String> getVariableBindings() {
 		return variableBindings;
 	}
 
-	public void setVariableBindings(List<VariableBinding> variableBindings) {
+	public void setVariableBindings(Map<String, String> variableBindings) {
 		this.variableBindings = variableBindings;
 	}
 	

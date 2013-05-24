@@ -2,6 +2,11 @@ package objects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import planObjects.VariableBinding;
+
+import algorithm.VariableManager;
 
 
 
@@ -165,11 +170,11 @@ public class Action {
 		return clone;
 	}
 	
-	public boolean effectsContainLiteralNegation(Literal l, List<String> variablesUsed){
-		boolean matchingArgs = true;
+	public boolean effectsContainLiteralNegation(Literal l, List<String> variablesUsed, Map<String, String> map){
+		boolean matchingArgs = false;
 		for(Literal effect : effects){
 			if(effect.getName().equals(l.getName()) && effect.getValue() != l.getValue()){
-				matchingArgs = effect.argumentsMatch(l, variablesUsed);
+				matchingArgs = effect.argumentsMatch(l, variablesUsed, map);
 			}
 		}
 		return matchingArgs;
@@ -225,4 +230,35 @@ public class Action {
 			eff.replaceVariables(newVar);
 		}
 	}
+	
+	public void instantiate(Literal baseLiteral, VariableManager vm){
+		for (String formalArg : formalArguments) {
+			int n = baseLiteral.getFormalArguments().indexOf(formalArg);
+			if (n >= 0) {
+				actualArguments.add(
+						baseLiteral.getActualArguments().get(n));
+			} else {
+				String variable = vm.getVariableName();
+				actualArguments.add(variable);
+			}
+		}
+		
+		instantiatePreConditions();
+		instantiateEffects();
+		
+	}
+	private void instantiateEffects() {
+		for(Literal eff : effects){
+			eff.instantiate(this);
+		}
+		
+	}
+
+	private void instantiatePreConditions() {
+		for(Literal pre : preConditions){
+			pre.instantiate(this);
+		}
+		
+	}
+
 }

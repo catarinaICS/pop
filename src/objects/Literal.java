@@ -2,14 +2,18 @@ package objects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import planObjects.VariableBinding;
 
 public class Literal {
-	
+
 	private String name;
 	private List<String> formalArguments;
 	private List<String> actualArguments;
 	private boolean value;
-//	private boolean isSatisfied;
+
+	// private boolean isSatisfied;
 
 	public Literal(String name, List<String> formalArguments,
 			List<String> actualArguments, boolean value) {
@@ -19,9 +23,10 @@ public class Literal {
 		this.actualArguments = actualArguments;
 		this.value = value;
 	}
-	
+
 	public Literal createCopy() {
-		List<String> cloneActualArguments = new ArrayList<String>(actualArguments);
+		List<String> cloneActualArguments = new ArrayList<String>(
+				actualArguments);
 		return new Literal(name, formalArguments, cloneActualArguments, value);
 	}
 
@@ -56,73 +61,148 @@ public class Literal {
 	public void setValue(boolean value) {
 		this.value = value;
 	}
-	
-	public boolean argumentsMatch(Literal otherLiteral, List<String> variablesUsed){
+
+	public boolean argumentsMatch(Literal otherLiteral,
+			List<String> variablesUsed, Map<String, String> map) {
 		boolean matchingArgs = true;
-		for(String arg : otherLiteral.getActualArguments()){
-			int index = otherLiteral.getActualArguments().indexOf(arg);
-			String myArg = actualArguments.get(index); 
-			if(!myArg.equals(arg) && !variablesUsed.contains(myArg) && !variablesUsed.contains(arg)){
-				matchingArgs = false;
+
+		List<String> thisArgs = new ArrayList<String>();
+		List<String> otherLiteralArgs = new ArrayList<String>();
+		// verificar em this
+		for (String thisArg : actualArguments) {
+			if (variablesUsed.contains(thisArg) && map.containsKey(thisArg)) {
+				thisArgs.add(map.get(thisArg));
+			} else {
+				thisArgs.add(thisArg);
 			}
 		}
+		// verificar em otherLiteral
+		for (String otherArg : otherLiteral.getActualArguments()) {
+			if (variablesUsed.contains(otherArg) && map.containsKey(otherArg)) {
+				otherLiteralArgs.add(map.get(otherArg));
+			} else {
+				otherLiteralArgs.add(otherArg);
+			}
+		}
+
+		boolean thisHasFullArgs = true;
+		for (String thisArg : thisArgs) {
+			if (variablesUsed.contains(thisArg)) {
+				thisHasFullArgs = false;
+			}
+		}
+
+		boolean otherHasFullArgs = true;
+		for (String otherArg : otherLiteralArgs) {
+			if (variablesUsed.contains(otherArg)) {
+				otherHasFullArgs = false;
+			}
+		}
+
+		if (thisHasFullArgs && otherHasFullArgs) { //tudo instanciado
+			for(int i = 0 ; i< thisArgs.size() ; i++){
+				if(!thisArgs.get(i).equals(otherLiteralArgs.get(i))){
+					matchingArgs = false;
+				}
+			}
+
+		} else if (!thisHasFullArgs && !otherHasFullArgs) { //os dois literais têm variaveis nao instanciadas
+			for(int i = 0 ; i< thisArgs.size() ; i++){
+				String thisArg = thisArgs.get(i);
+				String otherArg = otherLiteralArgs.get(i);
+				if(!thisArg.equals(otherArg) && !variablesUsed.contains(thisArg) && !variablesUsed.contains(otherArg)){
+					matchingArgs = false;
+				}
+						
+			}
+
+		} else { //um literal está completamente instanciado e outro não
+			for(int i = 0 ; i< thisArgs.size() ; i++){
+				String thisArg = thisArgs.get(i);
+				String otherArg = otherLiteralArgs.get(i);
+				if(!thisArg.equals(otherArg) && !variablesUsed.contains(thisArg) && !variablesUsed.contains(otherArg)){
+					matchingArgs = false;
+				}
+						
+			}
+
+		}
+
+		// for(String arg : otherLiteral.getActualArguments()){
+		// int index = otherLiteral.getActualArguments().indexOf(arg);
+		//
+		// String myArg = actualArguments.get(index);
+		// for(VariableBinding b : variableBindings){
+		// if(b.getVariableName().equals(myArg)){
+		// myArg = b.getVariableValue();
+		// }
+		// }
+		// String literalArg = arg;
+		// // for(VariableBinding b : variableBindings){
+		// // if(b.getVariableName().equals(arg)){
+		// // literalArg = b.getVariableValue();
+		// // }
+		// // }
+		// if(!myArg.equals(literalArg) && !variablesUsed.contains(myArg) &&
+		// !variablesUsed.contains(literalArg)){
+		// matchingArgs = false;
+		// }
+		// }
 		return matchingArgs;
 	}
 	
-	
-
-//	public boolean isSatisfied() {
-//		return isSatisfied;
-//	}
-//
-//	public void setSatisfied(boolean isSatisfied) {
-//		this.isSatisfied = isSatisfied;
-//	}
+	public void instantiate(Action actionCreated) {
+			for (String formalArg : formalArguments) {
+				int i = actionCreated.getFormalArguments().indexOf(formalArg);
+				String arg = actionCreated.getActualArguments().get(i);
+				actualArguments.add(arg);
+			}
+		
+		
+	}
 	
 	@Override
 	public String toString() {
 		String litValue = "";
-		if(value == false ){
+		if (value == false) {
 			litValue = "not ";
 		}
-		if(actualArguments.isEmpty()){
+		if (actualArguments.isEmpty()) {
 			return litValue + name + formalArguments;
-		}else{
+		} else {
 			return litValue + name + actualArguments;
 		}
-		
+
 	}
 
 	public boolean containsVariables(List<String> variablesUsed) {
-		for(String arg : actualArguments){
-			if(variablesUsed.contains(arg)){
+		for (String arg : actualArguments) {
+			if (variablesUsed.contains(arg)) {
 				return true;
 			}
 		}
 		return false;
-		
+
 	}
 
 	public void replaceVariables(VariableBinding newVar) {
 		List<String> newArgs = cloneStringList(actualArguments);
-		for(String arg : actualArguments){
+		for (String arg : actualArguments) {
 			int index = actualArguments.indexOf(arg);
-			if(arg.equals(newVar.getVariableName())){
+			if (arg.equals(newVar.getVariableName())) {
 				newArgs.set(index, newVar.getVariableValue());
 			}
 		}
 		setActualArguments(newArgs);
 	}
 
-		private List<String> cloneStringList(List<String> listToClone){
+	private List<String> cloneStringList(List<String> listToClone) {
 		List<String> clone = new ArrayList<String>();
-		for(String s : listToClone){
+		for (String s : listToClone) {
 			String copy = new String(s);
 			clone.add(copy);
 		}
 		return clone;
 	}
-	
-	
-	
+
 }
